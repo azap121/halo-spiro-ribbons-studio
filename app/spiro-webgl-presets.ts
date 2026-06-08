@@ -7,7 +7,7 @@ export interface SpiroWebglPreset {
   render: Partial<RenderControlValues>;
 }
 
-export const DEFAULT_WEBGL_PRESET_ID = 'blue-gray-hologram-ring';
+export const DEFAULT_WEBGL_PRESET_ID = 'blue-globe';
 
 function webglPreset(
   id: string,

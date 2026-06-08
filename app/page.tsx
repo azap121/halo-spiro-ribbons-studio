@@ -30,7 +30,7 @@ import {
   faTrashCan,
 } from '@fortawesome/pro-light-svg-icons';
 import { LevaPanel, folder, useControls, useCreateStore } from 'leva';
-import { DEFAULT_PRESET_ID, HALO_ORANGE, PRESET_OPTIONS, SPIRO_PRESETS, getPresetById } from './presets';
+import { HALO_ORANGE, PRESET_OPTIONS, SPIRO_PRESETS, getPresetById } from './presets';
 import { SpiroParticle3D } from './spiro-particle-3d';
 import type { SpiroParticle3DHandle, SpiroParticleControls, SpiroParticleFrameStats } from './spiro-particle-3d';
 import { SpiroRibbonCanvas } from './spiro-ribbon-canvas';
@@ -89,7 +89,8 @@ interface WebglErrorBoundaryState {
 const ACCEPTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']);
 const LARGE_FILE_BYTES = 8 * 1024 * 1024;
 const SETTINGS_SCHEMA_VERSION = 7;
-const DEFAULT_RIBBON_PRESET = getPresetById(DEFAULT_PRESET_ID);
+const DEFAULT_WEBGL_RIBBON_PRESET_ID = 'ring-lace';
+const DEFAULT_RIBBON_PRESET = getPresetById(DEFAULT_WEBGL_RIBBON_PRESET_ID);
 const DEFAULT_WEBGL_PRESET = getWebglPresetById(DEFAULT_WEBGL_PRESET_ID);
 const EMPTY_AUDIO_BANDS: AudioBands = { level: 0, bass: 0, mid: 0, treble: 0 };
 const AUDIO_NOISE_FLOOR = 0.025;
@@ -503,7 +504,7 @@ export default function SpiroRibbonsStudioPage() {
   const canvasRef = useRef<SpiroRibbonCanvasHandle>(null);
   const particleRef = useRef<SpiroParticle3DHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const presetRef = useRef(DEFAULT_PRESET_ID);
+  const presetRef = useRef(DEFAULT_WEBGL_RIBBON_PRESET_ID);
   const webglPresetRef = useRef(DEFAULT_WEBGL_PRESET_ID);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -1500,7 +1501,7 @@ export default function SpiroRibbonsStudioPage() {
     bumpWebglResetKey();
     setRendererModeValue('dimensional');
     webglPresetRef.current = DEFAULT_WEBGL_PRESET_ID;
-    applyPreset(DEFAULT_PRESET_ID);
+    applyPreset(DEFAULT_WEBGL_RIBBON_PRESET_ID);
     setImageControls({
       imageMode: 'behind',
       colorMode: 'halo-tonal',
