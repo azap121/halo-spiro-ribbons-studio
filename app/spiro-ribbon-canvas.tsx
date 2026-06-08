@@ -12,7 +12,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { createImageSampler, buildSpiroSvg, renderSpiroRibbonFrame } from './spiro-engine';
 import type { ImageSampler } from './spiro-engine';
-import type { SpiroRibbonConfig, UploadedRasterImage } from './spiro-types';
+import type { SpiroRasterExportMode, SpiroRibbonConfig, UploadedRasterImage } from './spiro-types';
 
 const MAX_DPR = 2;
 
@@ -22,7 +22,7 @@ export interface FrameStats {
 }
 
 export interface SpiroRibbonCanvasHandle {
-  exportPng: (scale: number, transparent: boolean) => string | null;
+  exportPng: (scale: number, transparent: boolean, mode?: SpiroRasterExportMode) => string | null;
   exportSvg: (transparent: boolean) => string | null;
 }
 
@@ -80,6 +80,29 @@ function configureCanvas(canvas: HTMLCanvasElement, width: number, height: numbe
   return ctx;
 }
 
+function resolveExportConfig(
+  config: SpiroRibbonConfig,
+  transparent: boolean,
+  mode: SpiroRasterExportMode
+): SpiroRibbonConfig {
+  if (mode === 'mask') {
+    return {
+      ...config,
+      strokeColor: '#FFFFFF',
+      opacity: 1,
+      imageMode: 'behind',
+      colorMode: 'monochrome',
+      blendMode: 'source-over',
+      backgroundMode: 'transparent',
+    };
+  }
+
+  return {
+    ...config,
+    backgroundMode: transparent ? 'transparent' : config.backgroundMode,
+  };
+}
+
 export const SpiroRibbonCanvas = forwardRef<SpiroRibbonCanvasHandle, SpiroRibbonCanvasProps>(
   function SpiroRibbonCanvas({ config, image, onDropImage, onFrameStats }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -105,7 +128,7 @@ export const SpiroRibbonCanvas = forwardRef<SpiroRibbonCanvasHandle, SpiroRibbon
     useImperativeHandle(
       ref,
       () => ({
-        exportPng: (scale, transparent) => {
+        exportPng: (scale, transparent, mode = 'color') => {
           const exportCanvas = document.createElement('canvas');
           const safeScale = Math.max(1, Math.min(scale, 4));
           exportCanvas.width = Math.round(size.width * safeScale);
@@ -117,13 +140,14 @@ export const SpiroRibbonCanvas = forwardRef<SpiroRibbonCanvasHandle, SpiroRibbon
           }
 
           ctx.setTransform(safeScale, 0, 0, safeScale, 0, 0);
+          const exportConfig = resolveExportConfig(config, transparent, mode);
           renderSpiroRibbonFrame(
             ctx,
-            { ...config, backgroundMode: transparent ? 'transparent' : config.backgroundMode },
+            exportConfig,
             size.width,
             size.height,
-            sampler,
-            image,
+            mode === 'mask' ? null : sampler,
+            mode === 'mask' ? null : image,
             0
           );
 

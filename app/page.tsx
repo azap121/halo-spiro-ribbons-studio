@@ -86,7 +86,8 @@ interface WebglErrorBoundaryState {
   hasError: boolean;
 }
 
-const ACCEPTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']);
+const ACCEPTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/avif']);
+const ACCEPTED_IMAGE_TYPE_LABEL = 'PNG, JPG, SVG, WebP, or AVIF';
 const LARGE_FILE_BYTES = 8 * 1024 * 1024;
 const SETTINGS_SCHEMA_VERSION = 7;
 const DEFAULT_WEBGL_RIBBON_PRESET_ID = 'ring-lace';
@@ -168,6 +169,55 @@ function downloadTextFile(contents: string, fileName: string, type: string): voi
   const url = URL.createObjectURL(blob);
   downloadDataUrl(url, fileName);
   URL.revokeObjectURL(url);
+}
+
+function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  downloadDataUrl(url, fileName);
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function getAvifFileName(presetId: string, mode: ExportControlValues['avifMode']): string {
+  return `halo-spiro-${presetId}${mode === 'mask' ? '-mask' : ''}.avif`;
+}
+
+function buildCssMaskSnippet(fileName: string): string {
+  return `.spiro-mask-fill {
+  --spiro-color-a: #ef601a;
+  --spiro-color-b: #36d6d1;
+  --spiro-color-c: #191919;
+  background:
+    radial-gradient(circle at 48% 42%, var(--spiro-color-b), transparent 34%),
+    linear-gradient(135deg, var(--spiro-color-a), var(--spiro-color-c));
+  mask-image: url('/${fileName}');
+  mask-mode: alpha;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url('/${fileName}');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}`;
+}
+
+async function encodeAvifFromPngDataUrl(dataUrl: string, quality: number): Promise<Blob> {
+  const pngResponse = await fetch(dataUrl);
+  const pngBlob = await pngResponse.blob();
+  const formData = new FormData();
+  formData.set('image', pngBlob, 'halo-spiro-source.png');
+  formData.set('quality', String(Math.round(quality)));
+
+  const response = await fetch('/api/export/avif', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.blob();
 }
 
 async function copyText(text: string): Promise<void> {
@@ -898,11 +948,20 @@ export default function SpiroRibbonsStudioPage() {
     []
   ) as unknown as ControlTuple<RenderControlValues>;
 
-  const [exportControls] = useControls(
+  const [exportControls, setExportControls] = useControls(
     'Export',
     () => ({
-      exportScale: { value: 2, min: 1, max: 4, step: 1, label: 'PNG scale' },
-      transparentExport: { value: false, label: 'Transparent PNG' },
+      exportScale: { value: 2, min: 1, max: 4, step: 1, label: 'Raster scale' },
+      transparentExport: { value: false, label: 'Transparent raster' },
+      avifMode: {
+        value: 'mask',
+        options: {
+          'Color image': 'color',
+          'Alpha mask': 'mask',
+        },
+        label: 'AVIF mode',
+      },
+      avifQuality: { value: 82, min: 1, max: 100, step: 1, label: 'AVIF quality' },
     }),
     { collapsed: false },
     { store: flatStore },
@@ -1371,6 +1430,9 @@ export default function SpiroRibbonsStudioPage() {
       if (decoded.animation) {
         setAnimationControls(decoded.animation);
       }
+      if (decoded.export) {
+        setExportControls(decoded.export);
+      }
       if (decoded.render) {
         const { renderMode, ...nextRenderControls } = decoded.render;
 
@@ -1396,7 +1458,7 @@ export default function SpiroRibbonsStudioPage() {
     } catch {
       setStatus({ severity: 'warning', message: 'The shared settings URL could not be read. Defaults loaded.' });
     }
-  }, [setAnimationControls, setImageControls, setRenderControls, setRendererModeValue, setRibbonControls]);
+  }, [setAnimationControls, setExportControls, setImageControls, setRenderControls, setRendererModeValue, setRibbonControls]);
 
   useEffect(() => () => {
     if (uploadedImage) {
@@ -1411,7 +1473,7 @@ export default function SpiroRibbonsStudioPage() {
     }
 
     if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
-      setStatus({ severity: 'error', message: 'Use PNG, JPG, SVG, or WebP.' });
+      setStatus({ severity: 'error', message: `Use ${ACCEPTED_IMAGE_TYPE_LABEL}.` });
       return;
     }
 
@@ -1451,6 +1513,40 @@ export default function SpiroRibbonsStudioPage() {
 
     downloadDataUrl(dataUrl, `halo-spiro-${activePreset.id}.png`);
     setStatus({ severity: 'success', message: 'PNG exported.' });
+  };
+
+  const handleExportAvif = async () => {
+    if (rendererMode === 'dimensional') {
+      setStatus({ severity: 'warning', message: 'AVIF export is available in Flat mode for now.' });
+      return;
+    }
+
+    const mode = exportControls.avifMode;
+    const transparent = mode === 'mask' || exportControls.transparentExport;
+    const dataUrl = canvasRef.current?.exportPng(exportControls.exportScale, transparent, mode);
+    if (!dataUrl) {
+      setStatus({ severity: 'error', message: 'AVIF export failed.' });
+      return;
+    }
+
+    try {
+      setStatus({ severity: 'info', message: `Encoding ${mode === 'mask' ? 'mask ' : ''}AVIF...` });
+      const avifBlob = await encodeAvifFromPngDataUrl(dataUrl, exportControls.avifQuality);
+      downloadBlob(avifBlob, getAvifFileName(activePreset.id, mode));
+      setStatus({ severity: 'success', message: `${mode === 'mask' ? 'Mask ' : ''}AVIF exported.` });
+    } catch {
+      setStatus({ severity: 'error', message: 'AVIF export failed. PNG and SVG exports are still available.' });
+    }
+  };
+
+  const handleCopyCssSnippet = async () => {
+    try {
+      const fileName = getAvifFileName(activePreset.id, 'mask');
+      await copyText(buildCssMaskSnippet(fileName));
+      setStatus({ severity: 'success', message: `CSS mask snippet copied for ${fileName}.` });
+    } catch {
+      setStatus({ severity: 'error', message: 'CSS snippet could not be copied.' });
+    }
   };
 
   const handleExportSvg = () => {
@@ -1521,6 +1617,12 @@ export default function SpiroRibbonsStudioPage() {
       phase: 0,
       reveal: 1,
       pulse: 0.2,
+    });
+    setExportControls({
+      exportScale: 2,
+      transparentExport: false,
+      avifMode: 'mask',
+      avifQuality: 82,
     });
     setRenderControls({
       seed: 121,
@@ -1644,6 +1746,14 @@ export default function SpiroRibbonsStudioPage() {
           >
             PNG
           </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<FontAwesomeIcon icon={faDownload} style={{ width: 14, height: 14 }} />}
+            onClick={() => void handleExportAvif()}
+          >
+            AVIF
+          </Button>
         </Stack>
       </Box>
 
@@ -1719,7 +1829,7 @@ export default function SpiroRibbonsStudioPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/avif,.avif"
               hidden
               onChange={(event) => {
                 if (event.target.files) {
@@ -1764,6 +1874,23 @@ export default function SpiroRibbonsStudioPage() {
               disabled={Boolean(uploadedImage) || rendererMode === 'dimensional'}
             >
               SVG
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<FontAwesomeIcon icon={faDownload} style={{ width: 14, height: 14 }} />}
+              onClick={() => void handleExportAvif()}
+              disabled={rendererMode === 'dimensional'}
+            >
+              AVIF
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<FontAwesomeIcon icon={faCopy} style={{ width: 14, height: 14 }} />}
+              onClick={() => void handleCopyCssSnippet()}
+            >
+              Copy CSS
             </Button>
             <Button
               variant="text"

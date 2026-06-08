@@ -16,6 +16,8 @@ export type SpiroBlendMode = 'source-over' | 'multiply' | 'screen' | 'lighter';
 
 export type SpiroRenderMode = 'flat' | 'dimensional';
 
+export type SpiroRasterExportMode = 'color' | 'mask';
+
 export type SpiroCameraMode = 'perspective' | 'orthographic';
 
 export type SpiroToneMappingMode = 'none' | 'aces';
@@ -84,6 +86,8 @@ export interface AnimationControlValues {
 export interface ExportControlValues {
   exportScale: number;
   transparentExport: boolean;
+  avifMode: SpiroRasterExportMode;
+  avifQuality: number;
 }
 
 export interface RenderControlValues {
