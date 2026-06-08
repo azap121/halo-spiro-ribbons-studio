@@ -41,7 +41,7 @@ function preset(
 }
 
 export const SPIRO_PRESETS: SpiroPreset[] = [
-  preset('six-petal-bloom', 'Six Petal Bloom', 'Large floral loops from the Figma reference.', {
+  preset('six-petal-bloom', 'Six Petal Bloom', 'Large floral loops from the upper-left Figma frame.', {
     innerRadius: 0.33,
     penOffset: 0.78,
     symmetry: 6,

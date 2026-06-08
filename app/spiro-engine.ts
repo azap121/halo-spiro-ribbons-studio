@@ -3,17 +3,29 @@ import type {
   SpiroRibbonConfig,
   UploadedRasterImage,
 } from './spiro-types';
+import { clamp, generateSpiroLayerPoints } from './spiro-math';
+import type { SpiroPoint } from './spiro-math';
 
-const TAU = Math.PI * 2;
 const SAMPLE_SIZE = 256;
 
-interface RawPoint {
-  x: number;
-  y: number;
-  progress: number;
-}
-
-export interface SpiroPoint extends RawPoint {}
+export {
+  SPIRO_TAU,
+  clamp,
+  generateSpiroLayerPoints,
+  generateSpiroNormalizedPoints,
+  generateSpiroRawLayerGeometry,
+  mapSpiroPointToCanvas,
+  resolveSpiroAnimatedPhase,
+  resolveSpiroCanvasTransform,
+  resolveSpiroLayerPhase,
+} from './spiro-math';
+export type {
+  NormalizedSpiroPoint,
+  SpiroCanvasTransform,
+  SpiroPoint,
+  SpiroRawLayerGeometry,
+  SpiroRawPoint,
+} from './spiro-math';
 
 export interface SampledColor {
   r: number;
@@ -27,10 +39,6 @@ export interface ImageSampler {
   width: number;
   height: number;
   sample: (x: number, y: number) => SampledColor;
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function hexToRgb(hex: string): Omit<SampledColor, 'a' | 'luminance'> {
@@ -71,99 +79,6 @@ function getBaseColor(config: SpiroRibbonConfig): SampledColor {
     a: 1,
     luminance: (0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b) / 255,
   };
-}
-
-function resolveAnimatedPhase(config: SpiroRibbonConfig, elapsedMs: number): number {
-  if (!config.playing) {
-    return config.phase * TAU;
-  }
-
-  const elapsed = elapsedMs / 1000;
-  const direction = config.direction === 'reverse' ? -1 : 1;
-  const alternateDirection =
-    config.direction === 'alternate' && Math.floor(elapsed * Math.max(config.speed, 0.05)) % 2 === 1
-      ? -1
-      : direction;
-
-  return (config.phase + elapsed * config.speed * 0.08 * alternateDirection) * TAU;
-}
-
-function getRawPoint(config: SpiroRibbonConfig, t: number, layerPhase: number): RawPoint {
-  const phase = t + layerPhase;
-  const radiusA = Math.max(config.outerRadius, config.innerRadius + 0.05);
-  const radiusB = Math.max(config.innerRadius, 0.04);
-  const penOffset = Math.max(config.penOffset, 0.02);
-
-  if (config.curveMode === 'epitrochoid') {
-    const ratio = (radiusA + radiusB) / radiusB;
-
-    return {
-      x: (radiusA + radiusB) * Math.cos(phase) - penOffset * Math.cos(ratio * phase),
-      y: (radiusA + radiusB) * Math.sin(phase) - penOffset * Math.sin(ratio * phase),
-      progress: 0,
-    };
-  }
-
-  if (config.curveMode === 'lissajous') {
-    const primary = Math.max(1, Math.round(config.symmetry));
-    const secondary = Math.max(1, Math.round(config.symmetry + config.lineDensity));
-
-    return {
-      x: Math.sin(primary * phase + penOffset * TAU),
-      y: Math.sin(secondary * phase),
-      progress: 0,
-    };
-  }
-
-  const ratio = (radiusA - radiusB) / radiusB;
-
-  return {
-    x: (radiusA - radiusB) * Math.cos(phase) + penOffset * Math.cos(ratio * phase),
-    y: (radiusA - radiusB) * Math.sin(phase) - penOffset * Math.sin(ratio * phase),
-    progress: 0,
-  };
-}
-
-export function generateSpiroLayerPoints(
-  config: SpiroRibbonConfig,
-  width: number,
-  height: number,
-  layerIndex: number,
-  elapsedMs = 0
-): SpiroPoint[] {
-  const pointCount = Math.round(clamp(config.pointCount, 120, 6000));
-  const rawPoints: RawPoint[] = [];
-  const animatedPhase = resolveAnimatedPhase(config, elapsedMs);
-  const layerPhase = animatedPhase + (layerIndex / Math.max(config.ribbonCount, 1)) * TAU;
-  const tMax = TAU * Math.max(config.lineDensity, 1);
-  let bound = 0.001;
-
-  for (let index = 0; index < pointCount; index += 1) {
-    const progress = pointCount === 1 ? 1 : index / (pointCount - 1);
-    const rawPoint = getRawPoint(config, progress * tMax, layerPhase);
-    rawPoint.progress = progress;
-    rawPoints.push(rawPoint);
-    bound = Math.max(bound, Math.abs(rawPoint.x), Math.abs(rawPoint.y));
-  }
-
-  const canvasMin = Math.min(width, height);
-  const scale = (canvasMin * 0.42 * config.scale) / bound;
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const baseRotation = ((config.rotation + layerIndex * (180 / Math.max(config.ribbonCount, 1))) * Math.PI) / 180;
-  const animatedRotation =
-    config.playing && (config.motion === 'rotate' || config.motion === 'orbit')
-      ? (elapsedMs / 1000) * config.speed * (config.direction === 'reverse' ? -0.35 : 0.35)
-      : 0;
-  const rotation = baseRotation + animatedRotation;
-  const cos = Math.cos(rotation);
-  const sin = Math.sin(rotation);
-
-  return rawPoints.map((rawPoint) => ({
-    x: centerX + (rawPoint.x * cos - rawPoint.y * sin) * scale,
-    y: centerY + (rawPoint.x * sin + rawPoint.y * cos) * scale,
-    progress: rawPoint.progress,
-  }));
 }
 
 export function drawFittedImage(

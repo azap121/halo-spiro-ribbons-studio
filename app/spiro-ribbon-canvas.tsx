@@ -8,6 +8,8 @@ import {
   useState,
 } from 'react';
 import type React from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { createImageSampler, buildSpiroSvg, renderSpiroRibbonFrame } from './spiro-engine';
 import type { ImageSampler } from './spiro-engine';
 import type { SpiroRibbonConfig, UploadedRasterImage } from './spiro-types';
@@ -31,7 +33,7 @@ export interface SpiroRibbonCanvasProps {
   onFrameStats?: (stats: FrameStats) => void;
 }
 
-function useCanvasSize(containerRef: React.RefObject<HTMLDivElement | null>) {
+function useCanvasSize(containerRef: React.RefObject<HTMLDivElement>) {
   const [size, setSize] = useState({ width: 960, height: 640 });
 
   useEffect(() => {
@@ -186,27 +188,60 @@ export const SpiroRibbonCanvas = forwardRef<SpiroRibbonCanvasHandle, SpiroRibbon
     };
 
     return (
-      <div
+      <Box
         ref={containerRef}
-        className={`canvasStage ${dragActive ? 'canvasStageDragging' : ''}`}
         onDragEnter={() => setDragActive(true)}
         onDragLeave={() => setDragActive(false)}
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
+        data-testid="spiro-ribbon-canvas-drop-zone"
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          minHeight: { xs: 420, md: 560 },
+          overflow: 'hidden',
+          bgcolor: 'background.default',
+        }}
       >
         <canvas
           ref={canvasRef}
           aria-label="Live spiro ribbon preview"
           role="img"
           data-testid="spiro-ribbon-canvas"
-          className="ribbonCanvas"
+          style={{ display: 'block' }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            border: '1px dashed',
+            borderColor: dragActive ? 'primary.main' : 'transparent',
+            bgcolor: dragActive ? 'action.hover' : 'transparent',
+            pointerEvents: 'none',
+            transition: 'background-color 150ms ease, border-color 150ms ease',
+          }}
         />
         {!image && (
-          <span className="dropHint">
+          <Typography
+            variant="caption"
+            sx={{
+              position: 'absolute',
+              left: 16,
+              bottom: 14,
+              color: 'text.secondary',
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              px: 1,
+              py: 0.5,
+            }}
+          >
             Drop an image to sample color through the ribbon
-          </span>
+          </Typography>
         )}
-      </div>
+      </Box>
     );
   }
 );
