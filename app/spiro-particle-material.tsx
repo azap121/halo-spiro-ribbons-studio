@@ -67,13 +67,19 @@ mat2 rotate2d(float angle) {
 
 vec3 resolveProjectedPosition(vec3 flatPosition, float flow) {
   float radius = clamp(aRadius, 0.0, 1.0);
-  float shell = sqrt(max(0.0, 1.0 - radius * radius));
   vec3 plane = flatPosition;
+  float poleBlend = 1.0 - smoothstep(0.035, 0.18, radius);
+  float poleAngle = aAngle + aRandom.y * TAU + aLayer * 1.73;
+  float poleRadius = 0.055 + aRandom.z * 0.075;
+  vec2 poleDirection = vec2(cos(poleAngle), sin(poleAngle));
+  vec2 projectedXY = mix(plane.xy, poleDirection * poleRadius, poleBlend);
+  float projectedRadius = clamp(length(projectedXY), 0.0, 1.0);
+  float shell = sqrt(max(0.0, 1.0 - projectedRadius * projectedRadius));
   vec3 dome = vec3(plane.xy, shell * uDomeDepth);
   float rearSide = step(0.5, fract(aLayer * 2.73 + aRandom.x * 1.91));
   float side = mix(1.0, -1.0, rearSide);
-  vec3 sphere = vec3(plane.xy * uSphereRadius, shell * uSphereRadius * side);
-  vec3 shellNormal = normalize(vec3(plane.xy, max(0.08, shell) * side));
+  vec3 sphere = vec3(projectedXY * uSphereRadius, shell * uSphereRadius * side);
+  vec3 shellNormal = normalize(vec3(projectedXY, max(0.08, shell) * side));
   float shellDrift = sin(flow * 0.8 + aProgress * 9.0 + aRandom.z * TAU) * uShellThickness * 0.12;
   vec3 hologramShell = sphere + shellNormal * ((aRandom.w - 0.5) * uShellThickness + shellDrift);
   vec3 projected = plane;
@@ -115,6 +121,7 @@ void main() {
   float shimmer = 0.82 + 0.18 * sin(flow * 2.0 + aProgress * 20.0 + aRandom.x * TAU);
   float trebleSize = 1.0 + smoothstep(0.08, 0.78, uAudioTreble) * 0.22;
   float glassSize = 1.0 + aGlass.x * 0.24 + aGlass.y * 0.58 + aGlass.z * 0.18;
+  float poleAlpha = mix(0.48 + aRandom.y * 0.22, 1.0, smoothstep(0.06, 0.2, radial));
 
   gl_PointSize = max(1.0, uPointSize * aSize * glassSize * attenuation * uPixelRatio * trebleSize);
   gl_Position = projectionMatrix * mvPosition;
@@ -128,7 +135,7 @@ void main() {
   vLocalY = displaced.y;
   vRandom = aRandom.x;
   vGlass = aGlass;
-  vAlpha = aMask * shimmer * revealAlpha;
+  vAlpha = aMask * shimmer * revealAlpha * poleAlpha;
 }
 `;
 
