@@ -1257,7 +1257,7 @@ export default function SpiroRibbonsStudioPage() {
         imageShapeStrength: shapePreset.shapeStrength,
         preserveSpiro: effectivePreserveSpiro,
         worldScale: projectionWorldScale,
-        spread: 0.18,
+        spread: effectiveProjectionMode === 'sphere' ? 0 : 0.18,
         swirl: renderControls.swirl,
         turbulence: renderControls.turbulence,
         flowSpeed: (config.playing || audioEnabled) && !reducedMotion ? 0.28 + reactiveBands.level * 0.08 : 0,

@@ -546,6 +546,7 @@ export function createSpiroParticleGeometryKey(
     controls.fitMode,
     image?.url ?? 'no-image',
     controls.look,
+    controls.projectionMode,
     controls.palette,
     controls.order,
     controls.voidRadius,
@@ -568,6 +569,21 @@ export function createSpiroParticleGeometryKey(
 
 const GEOMETRY_TAU = Math.PI * 2;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+function shouldUseRoundSphereField(controls: ResolvedSpiroParticleControls): boolean {
+  return controls.look === 'spiro-grain' && controls.projectionMode === 'sphere';
+}
+
+function resolveRoundSphereFieldPoint(index: number, total: number): { x: number; y: number } {
+  const progress = (index + 0.5) / Math.max(1, total);
+  const radius = Math.sqrt(progress);
+  const angle = index * GOLDEN_ANGLE;
+
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+}
 
 function createDataRingParticleGeometry(
   config: SpiroRibbonConfig,
@@ -762,6 +778,9 @@ export function createSpiroParticleGeometry(
     pointCount: samplesPerLayer,
     playing: false,
   };
+  const useRoundSphereField = shouldUseRoundSphereField(controls);
+  const totalSamples = layerCount * samplesPerLayer;
+  let sampleIndex = 0;
 
   const positions: number[] = [];
   const colors: number[] = [];
@@ -782,10 +801,20 @@ export function createSpiroParticleGeometry(
     const layerDepth = (layerRatio - 0.5) * 0.28;
 
     for (const point of points) {
-      const u = point.x * 0.5 + 0.5;
-      const v = 0.5 - point.y * 0.5;
+      const roundSpherePoint = resolveRoundSphereFieldPoint(sampleIndex, totalSamples);
+      sampleIndex += 1;
       let x = point.x;
       let y = point.y;
+
+      if (useRoundSphereField) {
+        const roundFieldStrength = 1 - controls.preserveSpiro;
+
+        x += (roundSpherePoint.x - x) * roundFieldStrength;
+        y += (roundSpherePoint.y - y) * roundFieldStrength;
+      }
+
+      const u = x * 0.5 + 0.5;
+      const v = 0.5 - y * 0.5;
       let sampledColor = sampleImageColor(sampler, u, v);
       let imageMask = resolveImageMask(sampledColor, controls);
       let glassSignal = resolveGlassSignal(sampledColor);
