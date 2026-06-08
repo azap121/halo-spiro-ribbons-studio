@@ -14,21 +14,20 @@ import Tabs from '@mui/material/Tabs';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faCloudArrowUp,
-  faCopy,
-  faDownload,
-  faImage,
-  faLink,
-  faMicrophone,
-  faPause,
-  faPlay,
-  faRotateRight,
-  faSliders,
-  faSparkles,
-  faTrashCan,
-} from '@fortawesome/pro-light-svg-icons';
+  Copy,
+  Download,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Mic,
+  Pause,
+  Play,
+  RotateCw,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
+  UploadCloud,
+} from 'lucide-react';
 import { LevaPanel, folder, useControls, useCreateStore } from 'leva';
 import { HALO_ORANGE, PRESET_OPTIONS, SPIRO_PRESETS, getPresetById } from './presets';
 import { SpiroParticle3D } from './spiro-particle-3d';
@@ -386,7 +385,7 @@ function ControlPanel({
     >
       <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" gap={1} alignItems="center">
-          <FontAwesomeIcon icon={faSliders} style={{ width: 16, height: 16 }} />
+          <SlidersHorizontal size={16} strokeWidth={1.8} />
           <Typography variant="subtitle2">Leva controls</Typography>
         </Stack>
         <Typography variant="caption" color="text.secondary">
@@ -1695,7 +1694,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="outlined"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faSliders} style={{ width: 14, height: 14 }} />}
+              startIcon={<SlidersHorizontal size={14} strokeWidth={1.8} />}
               onClick={() => setMobileControlsOpen(true)}
             >
               Controls
@@ -1707,14 +1706,14 @@ export default function SpiroRibbonsStudioPage() {
               onClick={togglePlaying}
               data-testid="spiro-play-toggle"
             >
-              <FontAwesomeIcon icon={animationControls.playing ? faPause : faPlay} style={{ width: 16, height: 16 }} />
+              {animationControls.playing ? <Pause size={16} strokeWidth={1.8} /> : <Play size={16} strokeWidth={1.8} />}
             </IconButton>
           </Tooltip>
           <Button
             variant={audioEnabled ? 'contained' : 'outlined'}
             size="small"
             disableElevation
-            startIcon={<FontAwesomeIcon icon={faMicrophone} style={{ width: 14, height: 14 }} />}
+            startIcon={<Mic size={14} strokeWidth={1.8} />}
             onClick={() => void handleToggleAudio()}
             disabled={rendererMode === 'flat'}
           >
@@ -1723,7 +1722,7 @@ export default function SpiroRibbonsStudioPage() {
           <Button
             variant="outlined"
             size="small"
-            startIcon={<FontAwesomeIcon icon={faSparkles} style={{ width: 14, height: 14 }} />}
+            startIcon={<Sparkles size={14} strokeWidth={1.8} />}
             onClick={() => setActionPulse(1)}
             disabled={rendererMode === 'flat'}
           >
@@ -1732,7 +1731,7 @@ export default function SpiroRibbonsStudioPage() {
           <Button
             variant="outlined"
             size="small"
-            startIcon={<FontAwesomeIcon icon={faRotateRight} style={{ width: 14, height: 14 }} />}
+            startIcon={<RotateCw size={14} strokeWidth={1.8} />}
             onClick={resetStudio}
           >
             Reset
@@ -1741,7 +1740,7 @@ export default function SpiroRibbonsStudioPage() {
             variant="contained"
             size="small"
             disableElevation
-            startIcon={<FontAwesomeIcon icon={faDownload} style={{ width: 14, height: 14 }} />}
+            startIcon={<Download size={14} strokeWidth={1.8} />}
             onClick={handleExportPng}
           >
             PNG
@@ -1749,7 +1748,7 @@ export default function SpiroRibbonsStudioPage() {
           <Button
             variant="outlined"
             size="small"
-            startIcon={<FontAwesomeIcon icon={faDownload} style={{ width: 14, height: 14 }} />}
+            startIcon={<Download size={14} strokeWidth={1.8} />}
             onClick={() => void handleExportAvif()}
           >
             AVIF
@@ -1841,7 +1840,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="outlined"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faCloudArrowUp} style={{ width: 14, height: 14 }} />}
+              startIcon={<UploadCloud size={14} strokeWidth={1.8} />}
               onClick={() => fileInputRef.current?.click()}
             >
               {uploadedImage ? 'Replace image' : 'Upload image'}
@@ -1849,14 +1848,14 @@ export default function SpiroRibbonsStudioPage() {
             {uploadedImage ? (
               <>
                 <Chip
-                  icon={<FontAwesomeIcon icon={faImage} style={{ width: 12, height: 12 }} />}
+                  icon={<ImageIcon size={12} strokeWidth={1.8} />}
                   label={uploadedImage.fileName}
                   size="small"
                   variant="outlined"
                 />
                 <Tooltip title="Remove image">
                   <IconButton aria-label="Remove image" size="small" onClick={clearImage}>
-                    <FontAwesomeIcon icon={faTrashCan} style={{ width: 14, height: 14 }} />
+                    <Trash2 size={14} strokeWidth={1.8} />
                   </IconButton>
                 </Tooltip>
               </>
@@ -1869,7 +1868,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="text"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faDownload} style={{ width: 14, height: 14 }} />}
+              startIcon={<Download size={14} strokeWidth={1.8} />}
               onClick={handleExportSvg}
               disabled={Boolean(uploadedImage) || rendererMode === 'dimensional'}
             >
@@ -1878,7 +1877,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="text"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faDownload} style={{ width: 14, height: 14 }} />}
+              startIcon={<Download size={14} strokeWidth={1.8} />}
               onClick={() => void handleExportAvif()}
               disabled={rendererMode === 'dimensional'}
             >
@@ -1887,7 +1886,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="text"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faCopy} style={{ width: 14, height: 14 }} />}
+              startIcon={<Copy size={14} strokeWidth={1.8} />}
               onClick={() => void handleCopyCssSnippet()}
             >
               Copy CSS
@@ -1895,7 +1894,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="text"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faCopy} style={{ width: 14, height: 14 }} />}
+              startIcon={<Copy size={14} strokeWidth={1.8} />}
               onClick={() => void handleCopySettings()}
             >
               Copy JSON
@@ -1903,7 +1902,7 @@ export default function SpiroRibbonsStudioPage() {
             <Button
               variant="text"
               size="small"
-              startIcon={<FontAwesomeIcon icon={faLink} style={{ width: 14, height: 14 }} />}
+              startIcon={<LinkIcon size={14} strokeWidth={1.8} />}
               onClick={() => void handleCopyShareUrl()}
             >
               Share

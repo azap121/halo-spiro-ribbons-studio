@@ -1,6 +1,6 @@
 # Halo Spiro Ribbons Studio
 
-An interactive browser studio for building Halo-style spiro ribbon and particle artwork with Leva controls, Canvas 2D rendering, WebGL/Three.js rendering, image upload, animation controls, and PNG/SVG export.
+An interactive browser studio for building Halo-style spiro ribbon and particle artwork with Leva controls, Canvas 2D rendering, WebGL/Three.js rendering, image upload, animation controls, and PNG/SVG/AVIF export.
 
 ## Run Locally
 
@@ -11,14 +11,11 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-FontAwesome Pro packages are resolved through `.npmrc`. Set `FONTAWESOME_NPM_AUTH_TOKEN` before installing if you are running this outside the configured Vercel project.
-
 ## Deploy To Vercel
 
 1. Import this repository in Vercel.
 2. Use the default Next.js settings.
-3. Ensure `FONTAWESOME_NPM_AUTH_TOKEN` is configured for the project.
-4. Deploy.
+3. Deploy.
 
 ## Features
 
@@ -31,5 +28,7 @@ FontAwesome Pro packages are resolved through `.npmrc`. Set `FONTAWESOME_NPM_AUT
 - Mic/action reactivity controls for WebGL particle animation
 - Play/pause animation, speed, phase, reveal, and pulse controls
 - PNG export for all states, including transparent flat PNG export
+- Flat AVIF export with color and alpha-mask modes
 - SVG export when no uploaded raster image is active
+- Copy CSS mask snippet for AVIF mask usage in web builds
 - Copy settings JSON and shareable URL config
